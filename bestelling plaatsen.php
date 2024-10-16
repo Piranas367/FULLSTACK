@@ -3,21 +3,40 @@ require('indexConfig.php');
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['Toevoegen'])) {
 
-    $idartikel = $_POST['idartikel'];
+    // Get the posted data
     $locatie = $_POST['Locatie']; 
-    $aantal = $_POST['aantal'];
-    
-    $sql = "INSERT INTO Bestellingen (idartikel, idVestigingen, aantal) VALUES (?,?,?)";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iii", $idartikel, $locatie, $aantal);
+    $aantal = $_POST['aantal'];  
+    $idartikel = $_POST['idartikel'];
 
-    if($stmt->execute()){
-        echo "Bestelling toegevoegd!";
+    $checkLocation = $conn->prepare("SELECT COUNT(*) FROM Vestigingen WHERE idVestigingen = ?");
+    $checkLocation->bind_param("i", $locatie);
+    $checkLocation->execute();
+    $checkLocation->bind_result($count);
+    $checkLocation->fetch();
+    $checkLocation->close();
+
+    if ($count > 0) {
+        $sql = "INSERT INTO bestellijst (idVestigingen, `aantal besteld`) VALUES (?, ?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("ii", $locatie, $aantal); 
+        $stmt->execute();
+        $stmt->close();
+
+        $sql = "INSERT INTO Bestelling (idartikel) VALUES (?)";
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("i", $idartikel); 
+        $stmt->execute();    
+        $stmt->close();
+
+
+
+        header("location: bestellingen.php");
     } else {
-        echo "Bestelling toevoegen mislukt!";
+        echo "Bestelling plaatsen mislukt!";
     }
 }
 
+// Fetch data for the form
 $idArtikelen = $conn->query("SELECT idartikel, naam FROM artikel");
 $locaties = $conn->query("SELECT idvestigingen, naam FROM Vestigingen");
 ?>
@@ -75,7 +94,7 @@ $locaties = $conn->query("SELECT idvestigingen, naam FROM Vestigingen");
         <tr>
             <td>Voor welke vestiging?</td>
             <td>
-                <select name="Locatie" required> <!-- Ensure the name matches -->
+                <select name="Locatie" required>
                     <?php
                     if ($locaties->num_rows > 0) {
                         while ($row = $locaties->fetch_assoc()) {
@@ -90,8 +109,17 @@ $locaties = $conn->query("SELECT idvestigingen, naam FROM Vestigingen");
         </tr>
         <tr>
             <td>Hoeveel wil je er toevoegen</td>
-            <td><input type="number" name="aantal" required></td>
+            <td>
+                <input type="number" name="aantal">
+            </td>
         </tr>
+        <tr>
+        <td>status levering</td>
+            <td>
+                <input type="number" name="aantal">
+            </td>
+        </tr>
+
         <tr>
             <td colspan="2"><button type="submit" name="Toevoegen">Bestelling Toevoegen</button></td>
         </tr>
@@ -116,3 +144,4 @@ $locaties = $conn->query("SELECT idvestigingen, naam FROM Vestigingen");
 
 </body>
 </html>
+
