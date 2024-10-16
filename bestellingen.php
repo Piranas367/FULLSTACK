@@ -1,19 +1,31 @@
 <?php
 require('indexConfig.php'); 
 
- function executeQuery($conn, $query, $params, $types = "") {
+// Function to execute the query with optional parameters
+function executeQuery($conn, $query, $params = [], $types = "") {
     $stmt = $conn->prepare($query);
     if ($types != "") {
         $stmt->bind_param($types, ...$params);
     }
     $stmt->execute();
     return $stmt->get_result();
- }
+}
 
- // Fetch data for the table, filtering by search term if provided
- $searchTerm = '';
- $sql = " SELECT * FROM Bestellingen"; 
- $result = executeQuery($conn, $sql, ["%" . $searchTerm . "%"], "");
+$searchTerm = '';
+$sql = "SELECT 
+            bestellijst.idVestigingen, 
+            Vestigingen.naam AS locatieNaam, 
+            bestellijst.`aantal besteld`, 
+            Bestelling.idartikel, 
+            artikel.naam AS artikelNaam 
+        FROM bestellijst
+        INNER JOIN Bestelling ON bestellijst.idbestellijst = Bestelling.idbestellijst
+        INNER JOIN Vestigingen ON bestellijst.idVestigingen = Vestigingen.idVestigingen  
+        INNER JOIN artikel ON Bestelling.idartikel = artikel.idartikel                   
+        WHERE bestellijst.`aantal besteld` LIKE ?";
+
+// Execute the query
+$result = executeQuery($conn, $sql, ["%" . $searchTerm . "%"], "s");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -49,48 +61,44 @@ require('indexConfig.php');
         <table>
             <thead>
                 <tr>
-                    <th>Product</th>
-                    <th>Aantal</th>
-                    <th>Locatie</th>
-                    <th>Bestelling Status</th>
+                    <th>Vestiging</th>
+                    <th>Aantal Besteld</th>
+                    <th>Artikel Naam</th>
+                    <th>bestelling's status</th>
                 </tr>
             </thead>
             <tbody>
                 <?php
                 if ($result->num_rows > 0) {
-                    // Output data of each row
                     while($row = $result->fetch_assoc()) {
                         echo "<tr>";
-                        echo "<td>" . $row['naam'] . "</td>";
-                        echo "<td>" . $row["aantal"] . "</td>";
-                        echo "<td>" . $row['locatieNaam'] . "</td>";
+                        echo "<td>" . $row['locatieNaam'] . "</td>";  
+                        echo "<td>" . $row['aantal besteld'] . "</td>";
+                        echo "<td>" . $row['artikelNaam'] . "</td>";
                         echo "<td></td>";
                         echo "</tr>";
                     }
                 } else {
-                    echo "<tr><td colspan='4'>Geen bestellingen gevonden</td></tr>";
+                    echo "<tr><td colspan='5'>Geen bestellingen gevonden</td></tr>";
                 }
                 ?>
-            <script>
-                const menuButton = document.querySelector('.menu-button');
-                const slideMenu = document.querySelector('.slide-menu');
-
-                // Toggle the slide menu visibility on button click
-                menuButton.addEventListener('click', () => {
-                    slideMenu.classList.toggle('show');
-                });
-                window.addEventListener('click', (event) => {
-                    if (!menuButton.contains(event.target) && !slideMenu.contains(event.target)) {
-                        slideMenu.classList.remove('show');
-                    }
-                });
-        </script>
             </tbody>
         </table>
     </div>  
     
-    
+    <script>
+        const menuButton = document.querySelector('.menu-button');
+        const slideMenu = document.querySelector('.slide-menu');
 
-    
+        // Toggle the slide menu visibility on button click
+        menuButton.addEventListener('click', () => {
+            slideMenu.classList.toggle('show');
+        });
+        window.addEventListener('click', (event) => {
+            if (!menuButton.contains(event.target) && !slideMenu.contains(event.target)) {
+                slideMenu.classList.remove('show');
+            }
+        });
+    </script>
 </body>
 </html>
