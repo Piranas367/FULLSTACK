@@ -36,6 +36,12 @@ $result = executeQuery($conn, $sql);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="bestelling.css">
     <title>Bestellingen</title>
+    <script>
+        // Functie om een bevestigingsmelding te tonen voor het verwijderen
+        function bevestigVerwijderen() {
+            return confirm('Weet je zeker dat je je Bestelling wilt verwijderen?');
+        }
+    </script>
 </head>
 
 <body>
@@ -62,83 +68,76 @@ $result = executeQuery($conn, $sql);
 <h1 style="text-align: center;">Bestellingen</h1>
 
 <div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th>ID Bestellijst</th>
-                <th>Artikel Naam</th>
-                <th>Vestiging</th>
-                <th>Aantal</th>
-                <th>Leveringsstatus</th>
-            </tr>
-        </thead>
-        <tbody>
     <?php
-        if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_changes'])) {
-            $leveringsstatus    = 'Geleverd!';
-            $idbestellijst      = $_POST['idbestellijst'];
+    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['submit_changes'])) {
+        $leveringsstatus    = 'Geleverd!';
+        $idbestellijst      = $_POST['idbestellijst'];
 
-            executeQuery($conn,
-                "UPDATE bestellijst SET leveringsstatus = ? WHERE idbestellijst = ? AND leveringsstatus = 'niet geleverd'",
-                [$leveringsstatus, $idbestellijst],
-                "si"
-            );
+        executeQuery($conn,
+            "UPDATE bestellijst SET leveringsstatus = ? WHERE idbestellijst = ? AND leveringsstatus = 'niet geleverd'",
+            [$leveringsstatus, $idbestellijst],
+            "si"
+        );
 
-            $result = executeQuery($conn, $sql);
-            echo "Bestelling status aangepast!";
-        }
+        $result = executeQuery($conn, $sql);
+        echo "Bestelling status aangepast!";
+    }
 
-        if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verwijder'])) {
-            $idbestellijst = $_POST['idbestellijst'];
+    if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verwijder'])) {
+        $idbestellijst = $_POST['idbestellijst'];
 
-            executeQuery($conn, "DELETE FROM Bestelling WHERE idbestellijst = ?",
-            [$idbestellijst], "i"
-            );
+        executeQuery($conn, "DELETE FROM Bestelling WHERE idbestellijst = ?",
+        [$idbestellijst], "i"
+        );
 
-            executeQuery($conn, "DELETE FROM bestellijst WHERE idbestellijst = ?",
-            [$idbestellijst], 
-            "i"
-            );
+        executeQuery($conn, "DELETE FROM bestellijst WHERE idbestellijst = ?",
+        [$idbestellijst], 
+        "i"
+        );
 
-            $result = executeQuery($conn, $sql);
-            echo "bestelling verwijderd!";
-        }
-        
-            $last_idbestellijst = null; 
-            if ($result->num_rows > 0) {
-                while ($row = $result->fetch_assoc()) {
-                    if ($last_idbestellijst != $row['idbestellijst']) {
-                        if ($last_idbestellijst != null) {
-                            echo "</tbody></table></div><br>"; 
-                        }
+        $result = executeQuery($conn, $sql);
+        echo "Bestelling verwijderd!";
+    }
 
-                echo "<div class='order-group'><h3 class='order-heading'>Bestelling ID: " . $row['idbestellijst'] . "</h3>";
+    $last_idbestellijst = null; 
+    if ($result->num_rows > 0) {
+        while ($row = $result->fetch_assoc()) {
+            if ($last_idbestellijst != $row['idbestellijst']) {
+                if ($last_idbestellijst != null) {
+                    echo "</tbody></table></div><br>"; 
+                }
+
+                echo "<div class='order-group'>
+                        <h3 class='order-heading'>Bestelling ID: " . $row['idbestellijst'] . "</h3>";
                 echo "<table>";
                 echo "<thead><tr>
                         <th>Artikel Naam</th>
                         <th>Vestiging</th>
                         <th>Aantal</th>
                         <th>Leveringsstatus</th>
+                        <th>Naam besteller</th>
                         <th>Actie</th>
                       </tr></thead><tbody>";
-                
+
                 $last_idbestellijst = $row['idbestellijst'];
             }
 
+            // gegevens in de bestelling 
             echo "<tr>";
             echo "<td>" . $row['artikelNaam'] . "</td>";
             echo "<td>" . $row['locatieNaam'] . "</td>";
             echo "<td>" . $row['aantal'] . "</td>";
             echo "<td>" . $row['leveringsstatus'] . "</td>";
+            echo "<td>" . $row['Besteller'] . "</td>";
 
+            // buttons om te kunnen verwijderen en/of status aan te passen
             echo "<td>
-                    <form method='POST'>
+                    <form method='POST' onsubmit='return bevestigVerwijderen()'>
                         <input type='hidden' name='idbestellijst' value='" . $row['idbestellijst'] . "'>
                         <button type='submit' name='submit_changes' class='submit_changes'>Status aanpassen</button>
-                        <button type='submit' name='verwijder' class='verwijder'>verwijder bestelling</button>
+                        <button type='submit' name='verwijder' class='verwijder'>Verwijder bestelling</button>
                     </form>
-                  </td>";
-
+                  </td>";      
             echo "</tr>";
         }
         echo "</tbody></table></div>"; 
@@ -146,9 +145,6 @@ $result = executeQuery($conn, $sql);
         echo "<tr><td colspan='5'>Geen bestellingen gevonden</td></tr>";
     }
     ?>
-</tbody>
-
-    </table>
 </div>
 
 <script>
