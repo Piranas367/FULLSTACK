@@ -1,7 +1,7 @@
 <?php
 require('indexConfig.php'); 
 
-// Function to execute a prepared statement
+// Voert veilig een database-opdracht uit, en gegevens geeft als je die geeft
 function executeQuery($conn, $query, $params, $types = "") {
     $stmt = $conn->prepare($query);
     if ($types != "") {
@@ -95,9 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['verwijderen'])) {
         $bestellingCheck = executeQuery($conn, "SELECT COUNT(*) AS total FROM Bestelling WHERE idartikel = ?", [$idartikel], "i");
         $countBestelling = $bestellingCheck->fetch_assoc()['total'];
 
-        if ($countBestelling == 0) {
-            echo "Product verwijerd per locatie!";
-        } 
+            echo "Product verwijderd!";     
 }
 }
 
@@ -122,7 +120,6 @@ $articlesResult = executeQuery($conn, "SELECT idartikel, naam FROM artikel", [])
 $locaties = executeQuery($conn, "SELECT idVestigingen, naam FROM Vestigingen", []);
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -131,7 +128,7 @@ $locaties = executeQuery($conn, "SELECT idVestigingen, naam FROM Vestigingen", [
     <title>Artikel Voorraad</title>
     <link rel="stylesheet" href="style.css">
     <script>
-        //functie om de bewerknop te veranderen naar de opslaan knop
+        // Functie om de bewerk-knop te veranderen naar de opslaan-knop
         function WisselKnop(button, bewerkbaar) {
             const trElement = button.closest('tr');
             const formElements = trElement.querySelectorAll('input');
@@ -141,7 +138,13 @@ $locaties = executeQuery($conn, "SELECT idVestigingen, naam FROM Vestigingen", [
             trElement.querySelector('.submit_changes').style.display = bewerkbaar ? 'inline' : 'none';
             trElement.querySelector('.edit_button').style.display = bewerkbaar ? 'none' : 'inline';
         }
-        // zorgt ervoor dat er een table komt om daarin de locatie en aantal toe te voegen in de artikel
+
+        // Functie om een bevestigingsmelding te tonen voor het verwijderen
+        function bevestigVerwijderen() {
+            return confirm('Weet je zeker dat je het product wilt verwijderen?');
+        }
+
+        // Zorgt ervoor dat er een formulier getoond wordt om de locatie en aantal toe te voegen aan het artikel
         function toggleAddProductForm() {
             const form = document.getElementById('addProductForm');
             form.style.display = form.style.display === 'none' ? 'block' : 'none';
@@ -173,7 +176,7 @@ $locaties = executeQuery($conn, "SELECT idVestigingen, naam FROM Vestigingen", [
         const menuButton = document.querySelector('.menu-button');
         const slideMenu = document.querySelector('.slide-menu');
 
-        // zorgt ervoor dat de optie menu een slide krijgt
+        // Zorgt ervoor dat het menu uitschuift bij een klik
         menuButton.addEventListener('click', () => {
             slideMenu.classList.toggle('show');
         });
@@ -203,7 +206,7 @@ $locaties = executeQuery($conn, "SELECT idVestigingen, naam FROM Vestigingen", [
                 <td>
                     <select name="idartikel" required>
                         <?php
-                        //laat de artikel naam zien zodat je een locatie en aantal kan toevoegen
+                        // Laat de artikelnaam zien zodat je een locatie en aantal kan toevoegen
                         if ($articlesResult->num_rows > 0) {
                             while ($row = $articlesResult->fetch_assoc()) {
                                 echo '<option value="' . $row['idartikel'] . '">' . $row['naam'] . '</option>';
@@ -220,7 +223,7 @@ $locaties = executeQuery($conn, "SELECT idVestigingen, naam FROM Vestigingen", [
                 <td>
                     <select name="locatie" required>
                         <?php
-                        //laat de locatie zien zodat je een aantal kan toevoegen
+                        // Laat de locatie zien zodat je een aantal kan toevoegen
                         if ($locaties->num_rows > 0) {
                             while ($row = $locaties->fetch_assoc()) {
                                 echo '<option value="' . $row['naam'] . '">' . $row['naam'] . '</option>';
@@ -234,7 +237,7 @@ $locaties = executeQuery($conn, "SELECT idVestigingen, naam FROM Vestigingen", [
             </tr>
             <tr>
                 <td>Aantal:</td>
-                <!-- zorgt ervoor dat je een aantal kan toevoegen in de artikel en locatie -->
+                <!-- Zorgt ervoor dat je een aantal kan toevoegen in de artikel en locatie -->
                 <td><input type="number" name="aantal" required></td>
             </tr>
             <tr>
@@ -243,7 +246,7 @@ $locaties = executeQuery($conn, "SELECT idVestigingen, naam FROM Vestigingen", [
         </table>
     </form>
 
-    <!-- Table with articles -->
+    <!-- Tabel met artikelen -->
     <div class="table-button-container">
         <table>
             <thead>
@@ -279,7 +282,7 @@ $locaties = executeQuery($conn, "SELECT idVestigingen, naam FROM Vestigingen", [
                         <td><button type="submit" name="submit_changes" class="submit_changes" style="display:none;">Opslaan</button></td>
                         </form>
                         
-                        <form method="POST" action="artikel voorraad.php">
+                        <form method="POST" action="artikel voorraad.php" onsubmit="return bevestigVerwijderen()"> 
                         <input type="hidden" name="idartikel" value="' . $row['idartikel'] . '">
                         <input type="hidden" name="aantal" value="' . $row['aantal'] . '">
                         <input type="hidden" name="locatieNaam" value="' . $row['locatieNaam'] . '">
@@ -296,4 +299,3 @@ $locaties = executeQuery($conn, "SELECT idVestigingen, naam FROM Vestigingen", [
     </div>
 </body>
 </html>
-
